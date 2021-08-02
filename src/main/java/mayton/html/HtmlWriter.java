@@ -35,11 +35,11 @@ public class HtmlWriter implements AutoCloseable {
     // <img src="html5.gif" alt="HTML5 Icon" width="128" height="128">
     // <img src="html5.gif" alt="HTML5 Icon" style="width:128px;height:128px;">
     // <img src="image.png" style="background-color:red;" />
-    public void writeImg(String src, int width, int height, String bgColorHex) {
+/*    public void writeImg(String src, int width, int height, String bgColorHex) {
         printWriter.printf("<img src=\"%s\" ", escapeHtml4(src));
         printWriter.printf(" width=\"%d\" height=\"%s\" ", width, height);
         printWriter.printf(" style=\"background-color:%s;\" ", bgColorHex);
-    }
+    }*/
 
     public void writeImg(String src, String style, int width, int height) {
         printWriter.printf("<img src=\"%s\" ", escapeHtml4(src));

@@ -1,17 +1,22 @@
 package mayton;
 
+import mayton.clusterization.ImageClusterizator;
 import mayton.html.HtmlWriter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.math3.ml.clustering.CentroidCluster;
+import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.profiler.Profiler;
 import org.slf4j.profiler.TimeInstrument;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -29,7 +34,7 @@ public class ImageIndexer {
 
     public static final String MINI_SUFFIX = "-mini.jpeg";
     public static final String INDEX_HTML = "index.html";
-    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-mini)?\\.(?<extension>jpg|jfif|jpe|jpeg)$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-(mini|bars))?\\.(?<extension>jpg|jfif|jpe|jpeg)$", Pattern.CASE_INSENSITIVE);
 
     // TODO: Check for all possible
     public static String SEPARATOR = System.getProperty("file.separator");
@@ -51,12 +56,32 @@ public class ImageIndexer {
         return new Options()
                 .addOption("s", "source", true, "Source jpeg files folder")
                 .addOption("z", "size", true, "Downscale to height size in px")
-                .addOption("c", "css", true, "Peek external css file");
+                .addOption("c", "css", true, "Peek external css file")
+                .addOption("m", "md5stategy", true, "MD5 persistence strategy ::= { FileMd5Strategy | XattrMd5Strategy(ext4/xfs) }");
     }
 
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp("java -jar image-indexer.jar", createOptions(), true);
+    }
+
+    public BufferedImage generateClusteredBars(BufferedImage original, List<CentroidCluster> clusters) {
+        int x = original.getWidth();
+        int y = original.getHeight();
+        BufferedImage bars = new BufferedImage(x, y, BufferedImage.TYPE_INT_RGB);
+        Graphics graphics = bars.getGraphics();
+        int barsCnt = clusters.size();
+        int barHeight = y / barsCnt;
+        for (int i = 0; i < barsCnt; i++) {
+            CentroidCluster cluster = clusters.get(i);
+            Clusterable center = cluster.getCenter();
+            graphics.setColor(new Color(
+                    (float) center.getPoint()[0],
+                    (float) center.getPoint()[1],
+                    (float) center.getPoint()[2]));
+            graphics.fillRect(0, i * barHeight, x, barHeight);
+        }
+        return bars;
     }
 
     public void processFile(String localFolderPrefix, File file, HtmlWriter htmlWriter) throws IOException {
@@ -84,8 +109,16 @@ public class ImageIndexer {
             avgColorImageStopWatcher.resume();
             String avgColor = tripleToHex(averageColor(image));
             avgColorImageStopWatcher.suspend();
-            //htmlWriter.writeImg(trimExtension(fileName) + MINI_SUFFIX, String.format("width:90%%;background-color:%s;", avgColor));
-            htmlWriter.writeImg("", String.format("width:90%%;background-color:%s;", avgColor), thumbnailX, thumbnailY);
+            htmlWriter.writeImg(trimExtension(fileName) + MINI_SUFFIX,
+                    String.format("width:90%%;background-color:%s;", avgColor),
+                    thumbnailX,
+                    thumbnailY);
+            ImageClusterizator imageClusterizator = new ImageClusterizator(image, 5, 400);
+            List<CentroidCluster> clusters = imageClusterizator.clusterize();
+            BufferedImage bars = generateClusteredBars(image, clusters);
+            try(OutputStream barsStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-bars.jpeg")) {
+                ImageIO.write(bars, "JPEG", barsStream);
+            }
         }
     }
 

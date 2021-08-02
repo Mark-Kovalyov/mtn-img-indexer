@@ -9,6 +9,18 @@ import java.io.IOException;
 
 public class ImageUtils {
 
+    public static int getRPixel(int color) {
+        return (0x00FF0000&color)>>16;
+    }
+
+    public static int getBPixel(int color) {
+        return (0x000000FF&color);
+    }
+
+    public static int getGPixel(int color) {
+        return (0x0000FF00&color)>>8;
+    }
+
     public static String  tripleToHex(Triple<Double, Double, Double> color) {
         String res = String.format("#%02X%02X%02X",
                 (int) (255.0 * color.getLeft()),
