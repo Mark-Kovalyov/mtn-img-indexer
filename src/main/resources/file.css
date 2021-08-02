@@ -1,0 +1,32 @@
+body {
+  background-color: #5E2B89;
+}
+
+table, th, td {
+  border: 0px;
+}
+
+h1 {
+  color: #EEE3CE;
+  text-align: center;
+  font-family: verdana;
+  font-size: 40px;
+}
+
+ul {
+  color: #EEE3CE;
+  font-family: verdana;
+  font-size: 20px;
+}
+
+li {
+  color: #EEE3CE;
+  font-family: verdana;
+  font-size: 20px;
+}
+
+a {
+  color: #EEE3CE;
+  font-family: verdana;
+  font-size: 20px;
+}
