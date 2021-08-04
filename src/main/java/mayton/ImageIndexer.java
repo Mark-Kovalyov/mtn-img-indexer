@@ -3,8 +3,14 @@ package mayton;
 import mayton.clusterization.ImageClusterizator;
 import mayton.html.HtmlWriter;
 import org.apache.commons.cli.*;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.slf4j.Logger;
@@ -16,6 +22,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -116,20 +123,25 @@ public class ImageIndexer {
                     thumbnailX,
                     thumbnailY);
             ImageClusterizator imageClusterizator = new ImageClusterizator(image, 5, 400);
-            List<CentroidCluster> clusters = imageClusterizator.clusterize();
+            List<CentroidCluster> clusters = imageClusterizator.detect();
             BufferedImage bars = generateClusteredBars(image, clusters);
             try(OutputStream barsStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-bars.jpeg")) {
                 ImageIO.write(bars, "JPEG", barsStream);
             }
-            BufferedImage gradientImage = generateGradient(thumbnail);
+            Pair<BufferedImage, Iterable<Triple<Double, Double, Double>>> res = generateGradient(thumbnail);
             try(OutputStream gradientStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-gradient.jpeg")) {
-                ImageIO.write(gradientImage, "JPEG", gradientStream);
+                ImageIO.write(res.getLeft(), "JPEG", gradientStream);
             }
-
+            try(Writer csvWriter = new FileWriter(trimExtension(file.getAbsoluteFile().toString()) + ".csv");
+                CSVPrinter csvPrinter = new CSVPrinter(csvWriter, CSVFormat.EXCEL.withHeader("Red", "Green", "Blue"))) {
+                for(Triple<Double,Double,Double> rgb : res.getRight()) {
+                    csvPrinter.printRecord(rgb.getLeft(), rgb.getMiddle(), rgb.getRight());
+                }
+            }
         }
     }
 
-    private BufferedImage generateGradient(BufferedImage original) {
+    private Pair<BufferedImage, Iterable<Triple<Double,Double,Double>>> generateGradient(BufferedImage original) {
         int xOrig = original.getWidth();
         int yOrig = original.getHeight();
         BufferedImage split = new BufferedImage(xOrig * 2, yOrig, BufferedImage.TYPE_INT_RGB);
@@ -138,6 +150,7 @@ public class ImageIndexer {
         graphics2D.drawImage(original, 0, 0, (img, infoflags, x1, y1, width, height) -> false);
         // TODO: Implement waitig of async operation
         sleep(3000);
+        List<Triple<Double,Double,Double>> arr = new ArrayList<>();
         for (int y = 0; y < yOrig; y++) {
             int ravg = 0;
             int gavg = 0;
@@ -154,13 +167,13 @@ public class ImageIndexer {
                 int bres = bavg / xOrig;
                 split.setRGB(x + xOrig, y, getPixel(rres, gres, bres));
             }
-            logger.info("{};{};{}",
+            arr.add(ImmutableTriple.of(
                     (double) ravg / xOrig / 255.0,
                     (double) gavg / xOrig / 255.0,
-                    (double) bavg / xOrig / 255.0);
+                    (double) bavg / xOrig / 255.0));
         }
         logger.info("Information trade-off : gradient : {} rgb pixels == {} bytes per image", yOrig, yOrig * 3);
-        return split;
+        return ImmutablePair.of(split, arr);
     }
 
     public static String trimExtension(String absoluteFile) {
