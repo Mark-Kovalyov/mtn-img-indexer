@@ -7,6 +7,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 public class ImageUtils {
 
     public static int getRPixel(int color) {
@@ -19,6 +22,13 @@ public class ImageUtils {
 
     public static int getGPixel(int color) {
         return (0x0000FF00&color)>>8;
+    }
+
+    public static int getPixel(int R, int G, int B) {
+        R = min(255, max(0, R));
+        G = min(255, max(0, G));
+        B = min(255, max(0, B));
+        return 0xFF000000 | R << 16 | G << 8 | B;
     }
 
     public static String  tripleToHex(Triple<Double, Double, Double> color) {
@@ -60,4 +70,11 @@ public class ImageUtils {
         return outputImage;
     }
 
+    public static void sleep(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

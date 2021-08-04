@@ -25,6 +25,7 @@ import static mayton.ImageUtils.*;
 
 // mayton : Jul-30, 2021 - Initial commit
 // mayton : 1-Aug, 2021 - changes
+// mayton : 4-Aug, 2021 - changes
 
 public class ImageIndexer {
 
@@ -34,7 +35,7 @@ public class ImageIndexer {
 
     public static final String MINI_SUFFIX = "-mini.jpeg";
     public static final String INDEX_HTML = "index.html";
-    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-(mini|bars))?\\.(?<extension>jpg|jfif|jpe|jpeg)$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-(mini|bars|gradient))?\\.(?<extension>jpg|jfif|jpe|jpeg)$", Pattern.CASE_INSENSITIVE);
 
     // TODO: Check for all possible
     public static String SEPARATOR = System.getProperty("file.separator");
@@ -70,6 +71,7 @@ public class ImageIndexer {
         int y = original.getHeight();
         BufferedImage bars = new BufferedImage(x, y, BufferedImage.TYPE_INT_RGB);
         Graphics graphics = bars.getGraphics();
+        Graphics2D graphics2D = (Graphics2D) graphics;
         int barsCnt = clusters.size();
         int barHeight = y / barsCnt;
         for (int i = 0; i < barsCnt; i++) {
@@ -95,7 +97,7 @@ public class ImageIndexer {
             readImageStopWatcher.suspend();
             int x = image.getWidth();
             int y = image.getHeight();
-            // TODO: not very accurate calculation of resize in pixels, possible loss of last integer figure
+            // TODO: fix non-accurate calculation of resize in pixels
             double scale = (double) targetHeightSize / y;
             resizeImageStopWatcher.resume();
             int thumbnailX = (int) (x * scale);
@@ -119,7 +121,46 @@ public class ImageIndexer {
             try(OutputStream barsStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-bars.jpeg")) {
                 ImageIO.write(bars, "JPEG", barsStream);
             }
+            BufferedImage gradientImage = generateGradient(thumbnail);
+            try(OutputStream gradientStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-gradient.jpeg")) {
+                ImageIO.write(gradientImage, "JPEG", gradientStream);
+            }
+
         }
+    }
+
+    private BufferedImage generateGradient(BufferedImage original) {
+        int xOrig = original.getWidth();
+        int yOrig = original.getHeight();
+        BufferedImage split = new BufferedImage(xOrig * 2, yOrig, BufferedImage.TYPE_INT_RGB);
+        Graphics graphics = split.getGraphics();
+        Graphics2D graphics2D = (Graphics2D) graphics;
+        graphics2D.drawImage(original, 0, 0, (img, infoflags, x1, y1, width, height) -> false);
+        // TODO: Implement waitig of async operation
+        sleep(3000);
+        for (int y = 0; y < yOrig; y++) {
+            int ravg = 0;
+            int gavg = 0;
+            int bavg = 0;
+            for (int x = 0; x < xOrig; x++) {
+                int rgb = original.getRGB(x, y);
+                ravg += getRPixel(rgb);
+                gavg += getGPixel(rgb);
+                bavg += getBPixel(rgb);
+            }
+            for (int x = 0; x < xOrig; x++) {
+                int rres = ravg / xOrig;
+                int gres = gavg / xOrig;
+                int bres = bavg / xOrig;
+                split.setRGB(x + xOrig, y, getPixel(rres, gres, bres));
+            }
+            logger.info("{};{};{}",
+                    (double) ravg / xOrig / 255.0,
+                    (double) gavg / xOrig / 255.0,
+                    (double) bavg / xOrig / 255.0);
+        }
+        logger.info("Information trade-off : gradient : {} rgb pixels == {} bytes per image", yOrig, yOrig * 3);
+        return split;
     }
 
     public static String trimExtension(String absoluteFile) {

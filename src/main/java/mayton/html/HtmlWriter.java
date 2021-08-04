@@ -3,9 +3,10 @@ package mayton.html;
 import java.io.PrintWriter;
 import java.io.Writer;
 
+// TODO: Re-write with in-box html or XML writer!
 import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
 
-public class HtmlWriter implements AutoCloseable {
+public class HtmlWriter implements HtmlWriterInterface {
 
     PrintWriter printWriter;
 
@@ -25,21 +26,6 @@ public class HtmlWriter implements AutoCloseable {
         printWriter.print(escapeHtml4(h1));
         printWriter.print("</h1>\n");
     }
-
-    public void writeH3(String h3) {
-        printWriter.print("<h3>");
-        printWriter.print(escapeHtml4(h3));
-        printWriter.print("</h3>\n");
-    }
-
-    // <img src="html5.gif" alt="HTML5 Icon" width="128" height="128">
-    // <img src="html5.gif" alt="HTML5 Icon" style="width:128px;height:128px;">
-    // <img src="image.png" style="background-color:red;" />
-/*    public void writeImg(String src, int width, int height, String bgColorHex) {
-        printWriter.printf("<img src=\"%s\" ", escapeHtml4(src));
-        printWriter.printf(" width=\"%d\" height=\"%s\" ", width, height);
-        printWriter.printf(" style=\"background-color:%s;\" ", bgColorHex);
-    }*/
 
     public void writeImg(String src, String style, int width, int height) {
         printWriter.printf("<img src=\"%s\" ", escapeHtml4(src));

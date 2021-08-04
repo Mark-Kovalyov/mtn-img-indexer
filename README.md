@@ -1,3 +1,13 @@
+# JPEG Exif attributes
+```
+
+```
+
+# AWS s3 md5 attribute
+```
+aws 
+```
+
 # XATTR/Attr
 
 ```bash
