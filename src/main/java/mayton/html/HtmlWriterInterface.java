@@ -1,7 +1,5 @@
 package mayton.html;
 
-import static org.apache.commons.text.StringEscapeUtils.escapeHtml4;
-
 public interface HtmlWriterInterface extends AutoCloseable {
 
     void writeH1(String h1);

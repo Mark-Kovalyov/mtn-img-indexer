@@ -1,6 +1,5 @@
 package mayton;
 
-import mayton.clusterization.ImageClusterizator;
 import mayton.html.HtmlWriter;
 import org.apache.commons.cli.*;
 import org.apache.commons.csv.CSVFormat;
@@ -57,15 +56,13 @@ public class ImageIndexer {
     public ImageIndexer(CommandLine line) {
         this.commandLine = line;
         sourceDir = commandLine.getOptionValue("s");
-        targetHeightSize = Integer.parseInt(commandLine.getOptionValue("z"));
+        targetHeightSize = commandLine.hasOption("z") ? Integer.parseInt(commandLine.getOptionValue("z")) : 256;
     }
 
     public static Options createOptions() {
         return new Options()
-                .addOption("s", "source", true, "Source jpeg files folder")
-                .addOption("z", "size", true, "Downscale to height size in px")
-                .addOption("c", "css", true, "Peek external css file")
-                .addOption("m", "md5stategy", true, "MD5 persistence strategy ::= { FileMd5Strategy | XattrMd5Strategy(ext4/xfs) }");
+                .addRequiredOption("s", "source", true, "Source jpeg files folder")
+                .addOption("z", "size", true, "Downscale to height size in px (default 256)");
     }
 
     public static void printHelp() {
@@ -73,32 +70,11 @@ public class ImageIndexer {
         formatter.printHelp("java -jar image-indexer.jar", createOptions(), true);
     }
 
-    public BufferedImage generateClusteredBars(BufferedImage original, List<CentroidCluster> clusters) {
-        int x = original.getWidth();
-        int y = original.getHeight();
-        BufferedImage bars = new BufferedImage(x, y, BufferedImage.TYPE_INT_RGB);
-        Graphics graphics = bars.getGraphics();
-        Graphics2D graphics2D = (Graphics2D) graphics;
-        int barsCnt = clusters.size();
-        int barHeight = y / barsCnt;
-        for (int i = 0; i < barsCnt; i++) {
-            CentroidCluster cluster = clusters.get(i);
-            Clusterable center = cluster.getCenter();
-            graphics.setColor(new Color(
-                    (float) center.getPoint()[0],
-                    (float) center.getPoint()[1],
-                    (float) center.getPoint()[2]));
-            graphics.fillRect(0, i * barHeight, x, barHeight);
-        }
-        return bars;
-    }
-
     public void processFile(String localFolderPrefix, File file, HtmlWriter htmlWriter) throws IOException {
-        logger.debug("process file {}", file);
         String fileName = file.getName();
         Matcher miniMatcher = JPEG_MINI_EXTENSION.matcher(fileName);
         if (miniMatcher.matches() && miniMatcher.group("suffix") == null) {
-            logger.info("deep dive into jpeg file {}", file);
+            logger.info("process jpeg file {}", file);
             readImageStopWatcher.resume();
             BufferedImage image = ImageIO.read(file);
             readImageStopWatcher.suspend();
@@ -119,62 +95,13 @@ public class ImageIndexer {
             String avgColor = tripleToHex(averageColor(image));
             avgColorImageStopWatcher.suspend();
             htmlWriter.writeImg(trimExtension(fileName) + MINI_SUFFIX,
-                    String.format("width:90%%;background-color:%s;", avgColor),
+                    String.format("background-color:%s;", avgColor),
                     thumbnailX,
                     thumbnailY);
-            ImageClusterizator imageClusterizator = new ImageClusterizator(image, 5, 400);
-            List<CentroidCluster> clusters = imageClusterizator.detect();
-            BufferedImage bars = generateClusteredBars(image, clusters);
-            try(OutputStream barsStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-bars.jpeg")) {
-                ImageIO.write(bars, "JPEG", barsStream);
-            }
-            Pair<BufferedImage, Iterable<Triple<Double, Double, Double>>> res = generateGradient(thumbnail);
-            try(OutputStream gradientStream = new FileOutputStream(trimExtension(file.getAbsoluteFile().toString()) + "-gradient.jpeg")) {
-                ImageIO.write(res.getLeft(), "JPEG", gradientStream);
-            }
-            try(Writer csvWriter = new FileWriter(trimExtension(file.getAbsoluteFile().toString()) + ".csv");
-                CSVPrinter csvPrinter = new CSVPrinter(csvWriter, CSVFormat.EXCEL.withHeader("Red", "Green", "Blue"))) {
-                for(Triple<Double,Double,Double> rgb : res.getRight()) {
-                    csvPrinter.printRecord(rgb.getLeft(), rgb.getMiddle(), rgb.getRight());
-                }
-            }
+
         }
     }
 
-    private Pair<BufferedImage, Iterable<Triple<Double,Double,Double>>> generateGradient(BufferedImage original) {
-        int xOrig = original.getWidth();
-        int yOrig = original.getHeight();
-        BufferedImage split = new BufferedImage(xOrig * 2, yOrig, BufferedImage.TYPE_INT_RGB);
-        Graphics graphics = split.getGraphics();
-        Graphics2D graphics2D = (Graphics2D) graphics;
-        graphics2D.drawImage(original, 0, 0, (img, infoflags, x1, y1, width, height) -> false);
-        // TODO: Implement waitig of async operation
-        sleep(3000);
-        List<Triple<Double,Double,Double>> arr = new ArrayList<>();
-        for (int y = 0; y < yOrig; y++) {
-            int ravg = 0;
-            int gavg = 0;
-            int bavg = 0;
-            for (int x = 0; x < xOrig; x++) {
-                int rgb = original.getRGB(x, y);
-                ravg += getRPixel(rgb);
-                gavg += getGPixel(rgb);
-                bavg += getBPixel(rgb);
-            }
-            for (int x = 0; x < xOrig; x++) {
-                int rres = ravg / xOrig;
-                int gres = gavg / xOrig;
-                int bres = bavg / xOrig;
-                split.setRGB(x + xOrig, y, getPixel(rres, gres, bres));
-            }
-            arr.add(ImmutableTriple.of(
-                    (double) ravg / xOrig / 255.0,
-                    (double) gavg / xOrig / 255.0,
-                    (double) bavg / xOrig / 255.0));
-        }
-        logger.info("Information trade-off : gradient : {} rgb pixels == {} bytes per image", yOrig, yOrig * 3);
-        return ImmutablePair.of(split, arr);
-    }
 
     public static String trimExtension(String absoluteFile) {
         int index = absoluteFile.lastIndexOf('.');
@@ -186,21 +113,24 @@ public class ImageIndexer {
         return index >= 0 ? path.substring(index + 1) : path;
     }
 
-    public void routeFolder(String htmlLocalFolder, File folder, HtmlWriter htmlWriter) throws Exception {
-        logger.debug("route folder {}", folder);
+    public void routeFolder(String htmlLocalFolder, File folder, HtmlWriter parentHtmlWriter) throws Exception {
         for(File node : folder.listFiles()) {
-            if (node.isDirectory()) {
-                htmlWriter.writeAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
-                HtmlWriter htmlWriterCurrentNode = new HtmlWriter(new FileWriter(folder.getAbsoluteFile() + "/" + INDEX_HTML));
-                // TODO: Get rid of if-else
-                if (htmlLocalFolder.isBlank()) {
-                    routeFolder(node.getName(), node, htmlWriterCurrentNode);
-                } else {
-                    routeFolder(htmlLocalFolder + "/" + node.getName(), node, htmlWriterCurrentNode);
-                }
-                htmlWriterCurrentNode.close();
+            if (node.isDirectory() && !node.getName().equals("css")) {
+                String nodeName = node.getName();
+                parentHtmlWriter.writeAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
+                parentHtmlWriter.writeParagraph();
+                HtmlWriter currentHtmlWriter = new HtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML));
+                routeFolder(htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
+                        node, currentHtmlWriter);
+                currentHtmlWriter.close();
+            }
+        }
+
+        for(File node : folder.listFiles()) {
+            if (node.isDirectory() && !node.getName().equals("css")) {
+                //
             } else {
-                processFile(htmlLocalFolder, node, htmlWriter);
+                processFile(htmlLocalFolder, node, parentHtmlWriter);
             }
         }
     }
@@ -224,7 +154,8 @@ public class ImageIndexer {
     @SuppressWarnings("java:S2095")
     private void generateCss() throws IOException {
         new File(sourceDir + "/css").mkdirs();
-        IOUtils.copy(new FileInputStream("src/main/resources/file.css"), new FileOutputStream(sourceDir + "/css/file.css"));
+        InputStream cssStream = getClass().getClassLoader().getResourceAsStream("file.css");
+        IOUtils.copy(cssStream, new FileOutputStream(sourceDir + "/css/file.css"));
     }
 
     private static void process(CommandLine line) throws Exception {
@@ -257,8 +188,8 @@ public class ImageIndexer {
         avgColorImageStopWatcher.stop();
         readImageStopWatcher.stop();
         resizeImageStopWatcher.stop();
-        logger.info("readImageStopWatcher     : {} ms", readImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
-        logger.info("avgColorImageStopWatcher : {} ms", avgColorImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
-        logger.info("resizeImageStopWatcher   : {} ms", resizeImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
+        logger.info("readImage     : {} ms", readImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
+        logger.info("avgColorImage : {} ms", avgColorImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
+        logger.info("resizeImage   : {} ms", resizeImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
     }
 }
