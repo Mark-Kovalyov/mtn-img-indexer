@@ -2,8 +2,6 @@ package mayton;
 
 import mayton.html.HtmlWriter;
 import mayton.html.HtmlWriterSimple;
-import mayton.layouts.ImageLayoutStrategy;
-import mayton.layouts.RibbonStrategy;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -67,7 +65,7 @@ public class ImageIndexer {
         formatter.printHelp("java -jar image-indexer.jar", createOptions(), true);
     }
 
-    public void processFile(String localFolderPrefix, File file, ImageLayoutStrategy imageLayoutStrategy) throws IOException {
+    public void processFile(String localFolderPrefix, File file, HtmlWriter htmlWriter) throws IOException {
         String fileName = extractLastPathElement(file.getName());
         Matcher miniMatcher = JPEG_MINI_EXTENSION.matcher(fileName);
         if (miniMatcher.matches() && miniMatcher.group("suffix") == null) {
@@ -96,41 +94,35 @@ public class ImageIndexer {
                 String avgColor = tripleToHex(averageColor(image));
                 avgColorImageStopWatcher.suspend();
                 String src = trimExtension(fileName) + MINI_SUFFIX + "." + extension;
-                imageLayoutStrategy.onAddImage(
-                        new ImageMetadata(
-                                src,
-                                x,
-                                y,
-                                avgColor,
-                                trimExtension(fileName))
-                );
+                htmlWriter.writeImg("", src, null, x, y, "");
             }
         }
     }
 
-    public void routeFolder(String rootName, String htmlLocalFolder, File folder, ImageLayoutStrategy parentImageLayoutStrategy) throws Exception {
-        parentImageLayoutStrategy.getHtmlWriter().writeH1(rootName == null ? folder.getName() : rootName);
+    public void routeFolder(String rootName, String htmlLocalFolder, File folder, HtmlWriter parentHtmlWriter) throws Exception {
+        parentHtmlWriter.writeH1(rootName == null ? folder.getName() : rootName);
 
         for(File node : folder.listFiles()) {
             if (node.isDirectory() && !node.getName().equals("css")) {
                 String nodeName = node.getName();
-                parentImageLayoutStrategy.getHtmlWriter().writeAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
-                parentImageLayoutStrategy.getHtmlWriter().lineBreak();
+                parentHtmlWriter.writeAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
+                parentHtmlWriter.lineBreak();
                 HtmlWriter currentHtmlWriter = new HtmlWriterSimple(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML));
-                ImageLayoutStrategy currentStrategy = new RibbonStrategy(currentHtmlWriter, clientAreaWidth, targetHeightSize);
+
                 routeFolder(null, htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
-                        node, currentStrategy);
+                        node, currentHtmlWriter);
                 currentHtmlWriter.close();
             }
         }
 
-        parentImageLayoutStrategy.onStartDocument();
+        //parentHtmlWriter.onStartDocument();
         for(File node : folder.listFiles()) {
             if (!(node.isDirectory() && !node.getName().equals("css"))) {
-                processFile(htmlLocalFolder, node, parentImageLayoutStrategy);
+                processFile(htmlLocalFolder, node, parentHtmlWriter);
             }
         }
-        parentImageLayoutStrategy.onEndDocument();
+        parentHtmlWriter.close();
+        //parentHtmlWriter.onEndDocument();
     }
 
 
@@ -166,9 +158,7 @@ public class ImageIndexer {
         profiler.start("indexing");
         // TODO: Get rid of writer+strategy pair
         HtmlWriterSimple htmlWriter = new HtmlWriterSimple(new FileWriter(sourceDir + "/" + INDEX_HTML));
-        ImageLayoutStrategy strategy = new RibbonStrategy(htmlWriter, clientAreaWidth, targetHeightSize);
-
-        routeFolder(rootFolderName, rootFolderName, new File(sourceDir), strategy);
+        routeFolder(rootFolderName, rootFolderName, new File(sourceDir), htmlWriter);
         htmlWriter.close();
         TimeInstrument timeInstrument = profiler.stop();
         timeInstrument.log();

@@ -12,50 +12,30 @@ public class HtmlWriterSimple implements HtmlWriter {
 
     public HtmlWriterSimple(Writer writer) {
         printWriter = new PrintWriter(writer);
-        printWriter.println("<!DOCTYPE html>");
-        printWriter.println("<html>");
-        printWriter.println("<head>");
-        printWriter.println("<meta charset=\"UTF-8\"/>");
-        printWriter.println("<style>");
-        printWriter.print(
-                "body {\n" +
-                "  background-color: #5E2B89;\n" +
-                "}\n" +
+        printWriter.println("<!DOCTYPE html>\n" +
                 "\n" +
-                "table, th, td {\n" +
-                "  border: none;\n" +
-                "}\n" +
+                "<html>\n" +
+                "    <head>\n" +
+                "        <title>[title is here]</title>\n" +
+                "        <meta charset=\"UTF-8\">\n" +
                 "\n" +
-                "img {\n" +
-                "  display: block;\n" +
-                "}\n" +
-                "h1 {\n" +
-                "  color: #EEE3CE;\n" +
-                "  text-align: left;\n" +
-                "  font-family: verdana;\n" +
-                "  font-size: 20px;\n" +
-                "}\n" +
-                "\n" +
-                "ul {\n" +
-                "  color: #EEE3CE;\n" +
-                "  font-family: verdana;\n" +
-                "  font-size: 15px;\n" +
-                "}\n" +
-                "\n" +
-                "li {\n" +
-                "  color: #EEE3CE;\n" +
-                "  font-family: verdana;\n" +
-                "  font-size: 20px;\n" +
-                "}\n" +
-                "\n" +
-                "a {\n" +
-                "  color: #EEE3CE;\n" +
-                "  font-family: verdana;\n" +
-                "  font-size: 20px;\n" +
-                "}\n");
-        printWriter.println("</style>");
-        printWriter.println("</head>");
-        printWriter.println("<body>");
+                "        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                "        <style>\n" +
+                "          \n" +
+                "            img{\n" +
+                "                display: block;\n" +
+                "                height:  64px;\n" +
+                "                margin-right: 1px;\n" +
+                "                margin-bottom: 1px; \n" +
+                "            }\n" +
+                "            div{\n" +
+                "                display: flex;\n" +
+                "                flex-wrap: wrap;\n" +
+                "                width: 95%;\n" +
+                "            }\n" +
+                "        </style>\n" +
+                "    </head>\n" +
+                "    <body>");
     }
 
     public void writeH1(String h1) {
@@ -80,6 +60,16 @@ public class HtmlWriterSimple implements HtmlWriter {
     }
 
     @Override
+    public void beginDiv() {
+        printWriter.printf("<div>");
+    }
+
+    @Override
+    public void endDiv() {
+        printWriter.printf("</div>");
+    }
+
+    @Override
     public void td() {
         printWriter.printf("<td>");
     }
@@ -90,11 +80,7 @@ public class HtmlWriterSimple implements HtmlWriter {
     }
 
     public void writeImg(String id, String src, String style, int width, int height, String alt) {
-        printWriter.printf("   <img src=\"%s\" ", escapeHtml4(src));
-        if (style != null) {
-            printWriter.printf(" style=\"%s\" ", style);
-        }
-        printWriter.printf(" width=%d height=%d >%n", width, height);
+       printWriter.printf("<img src=\"%s\" alt=\"\"/>%n", src);
     }
 
     public void writeParagraph() {

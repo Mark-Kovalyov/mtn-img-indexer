@@ -14,6 +14,10 @@ public interface HtmlWriter extends AutoCloseable {
 
     void endRow();
 
+    void beginDiv();
+
+    void endDiv();
+
     void td();
 
     void endTable();
