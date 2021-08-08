@@ -1,11 +1,24 @@
 # Img-Indexer
 
+## Primary Goals:
+* Off-line thumnails generator
+* Pure filesystem as datasource
+* EXIF tags to provide Date-Time based indexing
+* JPEG image support
+* Java-language based
+* No active server scipting (JSP/ASPX/PHP)
+
+## Secondary Goals
+* Introduce Dagger-2 as DI-framework
+* Re-compile with Graal compiler to achieve perfect warm-up time
+* Investigate vector graphics abilities to achieve 
+
 ## Usefull java libs
 Genetic
 * API https://jenetics.io/javadoc/jenetics/6.2/index.html
 * User Guide https://jenetics.io/manual/manual-6.2.0.pdf
 
-
+## Team members
 
 ## JPEG Exif attributes
 

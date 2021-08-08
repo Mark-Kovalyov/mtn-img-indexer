@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.regex.Matcher;
 
+import static mayton.FileUtils.extractLastPathElement;
+import static mayton.FileUtils.trimExtension;
 import static mayton.ImageIndexer.JPEG_MINI_EXTENSION;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -13,15 +15,18 @@ class ImageIndexerTest {
 
     @Test
     void testTrimExtension() {
-        assertEquals("hello", ImageIndexer.trimExtension("hello"));
-        assertEquals("hello.world", ImageIndexer.trimExtension("hello.world.jpg"));
+        assertEquals("hello", trimExtension("hello"));
+        assertEquals("hello.world", trimExtension("hello.world.jpg"));
+        assertEquals("1", trimExtension("1.jpg"));
     }
 
     @Test
     void testExtractPathElem() {
-        assertEquals("image-001.jpg", ImageIndexer.extractLastPathElement("image-001.jpg"));
-        assertEquals("image-001.jpg", ImageIndexer.extractLastPathElement("/image-001.jpg"));
-        assertEquals("image-001.jpg", ImageIndexer.extractLastPathElement("/img/catalog01/image-001.jpg"));
+        assertEquals("image-001.jpg", extractLastPathElement("image-001.jpg"));
+        assertEquals("image-001.jpg", extractLastPathElement("/image-001.jpg"));
+        assertEquals("image-001.jpg", extractLastPathElement("/img/catalog01/image-001.jpg"));
+
+
     }
 
     @Test
