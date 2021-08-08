@@ -1,0 +1,206 @@
+package mayton.html;
+
+import org.apache.commons.io.output.XmlStreamWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.xml.stream.XMLOutputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamWriter;
+
+import java.io.Writer;
+
+public class XHtmlWriter implements HtmlWriter {
+
+    private XMLStreamWriter xmlStreamWriter;
+
+    private static Logger logger = LoggerFactory.getLogger(XmlStreamWriter.class);
+
+    public XHtmlWriter(Writer writer, String title, String background, int height) throws XMLStreamException {
+        XMLOutputFactory factory = XMLOutputFactory.newInstance();
+        //XMLStreamWriter xmlStreamWriter = new IndentingXMLStreamWriter(factory.createXMLStreamWriter(writer));
+        xmlStreamWriter = factory.createXMLStreamWriter(writer);
+        xmlStreamWriter.writeStartDocument("utf-8","1.0");
+        xmlStreamWriter.writeStartElement("html");
+            xmlStreamWriter.writeStartElement("head");
+                xmlStreamWriter.writeStartElement("title");
+                    xmlStreamWriter.writeCharacters(title);
+                xmlStreamWriter.writeEndElement();
+                xmlStreamWriter.writeStartElement("meta");
+                    xmlStreamWriter.writeAttribute("name", "viewport");
+                    xmlStreamWriter.writeAttribute("content", "width=device-width, initial-scale=1.0");
+                xmlStreamWriter.writeEndElement();
+                xmlStreamWriter.writeStartElement("style");
+                xmlStreamWriter.writeCharacters(
+                    "            img{\n" +
+                    "                display: block;\n" +
+                    "                height:  " + height + "px;\n" +
+                    "                margin-right: 1px;\n" +
+                    "                margin-bottom: 1px; \n" +
+                    "            }\n" +
+                    "            body{\n" +
+                    "                background-color: " + background + ";\n" +
+                    "            }\n" +
+                    "            div{\n" +
+                    "                display: flex;\n" +
+                    "                flex-wrap: wrap;\n" +
+                    "                width: 95%;\n" +
+                    "            }\n");
+                xmlStreamWriter.writeEndElement();
+            xmlStreamWriter.writeEndElement();
+            xmlStreamWriter.writeStartElement("body");
+    }
+
+    @Override
+    public void writeH1(String h1) {
+        try {
+            xmlStreamWriter.writeStartElement("h1");
+            xmlStreamWriter.writeCharacters(h1);
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void writeParagraph() {
+        try {
+            xmlStreamWriter.writeEmptyElement("p");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void lineBreak() {
+        try {
+            xmlStreamWriter.writeEmptyElement("br");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void beginTable(int tableWidthPixels) {
+        try {
+            xmlStreamWriter.writeStartElement("table");
+            xmlStreamWriter.writeAttribute("width", String.valueOf(tableWidthPixels));
+            xmlStreamWriter.writeAttribute("cellspacing", "0");
+            xmlStreamWriter.writeAttribute("cellpadding", "0");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void beginRow() {
+        try {
+            xmlStreamWriter.writeStartElement("tr");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void endRow() {
+        try {
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void beginDiv() {
+        try {
+            xmlStreamWriter.writeStartElement("div");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void endDiv() {
+        try {
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void startTd() {
+        try {
+            xmlStreamWriter.writeStartElement("td");
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void endTd() {
+        try {
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void endTable() {
+        try {
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void writeImg(String id, String src, String style, int width, int height, String alt) {
+        try {
+            xmlStreamWriter.writeStartElement("img");
+            xmlStreamWriter.writeAttribute("src", src);
+            xmlStreamWriter.writeAttribute("alt", "");
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void beginAnchor(String ref) {
+        try {
+            xmlStreamWriter.writeStartElement("a");
+            xmlStreamWriter.writeAttribute("href", ref);
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void emptyAnchor(String ref, String comment) {
+        try {
+            xmlStreamWriter.writeStartElement("a");
+            xmlStreamWriter.writeAttribute("href", ref);
+            xmlStreamWriter.writeCharacters(comment);
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void endAnchor() {
+        try {
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void close() throws Exception {
+        xmlStreamWriter.writeEndDocument();
+        xmlStreamWriter.close();
+    }
+}

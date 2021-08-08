@@ -2,8 +2,8 @@ package mayton;
 
 import mayton.html.HtmlWriter;
 import mayton.html.HtmlWriterSimple;
+import mayton.html.XHtmlWriter;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,6 @@ public class ImageIndexer {
     public static Logger logger = LoggerFactory.getLogger(ImageIndexer.class);
     private final String sourceDir;
     private int targetHeightSize;
-    private int clientAreaWidth;
     private String rootFolderName;
 
     private CommandLine commandLine;
@@ -47,8 +46,6 @@ public class ImageIndexer {
         this.commandLine = line;
         sourceDir = commandLine.getOptionValue("s");
         targetHeightSize = commandLine.hasOption("h") ? Integer.parseInt(commandLine.getOptionValue("h")) : 128;
-        clientAreaWidth = commandLine.hasOption("w") ? Integer.parseInt(commandLine.getOptionValue("w")) : 1024;
-        logger.info("Configure clientAreaWidth = {}", clientAreaWidth);
         rootFolderName = commandLine.hasOption("r") ? commandLine.getOptionValue("r") : "";
     }
 
@@ -56,7 +53,6 @@ public class ImageIndexer {
         return new Options()
                 .addRequiredOption("s", "source",  true, "Source jpeg files folder")
                 .addOption("h", "thumnailheight",  true, "Thumbnail height size in pixels (default = 256)")
-                .addOption("w", "clientareawidth", true, "Client area width in pixels (default = 1024)")
                 .addOption("r", "rootfoldername",  true, "Root folder name. For ex: 'My Photos'");
     }
 
@@ -73,10 +69,10 @@ public class ImageIndexer {
             logger.info("process jpeg file {}", file);
             readImageStopWatcher.resume();
             BufferedImage image = ImageIO.read(file);
+            readImageStopWatcher.suspend();
             if (image == null) {
                 logger.warn("Something going wrong with file {}. Unable to read image.", file);
             } else {
-                readImageStopWatcher.suspend();
                 int x = image.getWidth();
                 int y = image.getHeight();
                 // TODO: fix non-accurate calculation of resize in pixels
@@ -90,39 +86,37 @@ public class ImageIndexer {
                 try (OutputStream outputStream = new FileOutputStream(miniPath)) {
                     ImageIO.write(thumbnail, "JPEG", outputStream);
                 }
-                avgColorImageStopWatcher.resume();
-                String avgColor = tripleToHex(averageColor(image));
-                avgColorImageStopWatcher.suspend();
                 String src = trimExtension(fileName) + MINI_SUFFIX + "." + extension;
+                htmlWriter.beginAnchor(fileName);
                 htmlWriter.writeImg("", src, null, x, y, "");
+                htmlWriter.endAnchor();
             }
         }
     }
 
     public void routeFolder(String rootName, String htmlLocalFolder, File folder, HtmlWriter parentHtmlWriter) throws Exception {
-        parentHtmlWriter.writeH1(rootName == null ? folder.getName() : rootName);
-
+        String title = rootName == null ? folder.getName() : rootName;
+        parentHtmlWriter.writeH1(title);
         for(File node : folder.listFiles()) {
-            if (node.isDirectory() && !node.getName().equals("css")) {
+            if (node.isDirectory()) {
                 String nodeName = node.getName();
-                parentHtmlWriter.writeAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
+                parentHtmlWriter.emptyAnchor(node.getName() + "/" + INDEX_HTML, "[" + node.getName() + "]");
+                parentHtmlWriter.endAnchor();
                 parentHtmlWriter.lineBreak();
-                HtmlWriter currentHtmlWriter = new HtmlWriterSimple(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML));
-
+                HtmlWriter currentHtmlWriter = new XHtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML), title, "#FF000000", this.targetHeightSize);
                 routeFolder(null, htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
                         node, currentHtmlWriter);
                 currentHtmlWriter.close();
             }
         }
-
-        //parentHtmlWriter.onStartDocument();
+        parentHtmlWriter.beginDiv();
         for(File node : folder.listFiles()) {
-            if (!(node.isDirectory() && !node.getName().equals("css"))) {
+            if (!(node.isDirectory())) {
                 processFile(htmlLocalFolder, node, parentHtmlWriter);
             }
         }
+        parentHtmlWriter.endDiv();
         parentHtmlWriter.close();
-        //parentHtmlWriter.onEndDocument();
     }
 
 
@@ -157,7 +151,7 @@ public class ImageIndexer {
         profiler.setLogger(logger);
         profiler.start("indexing");
         // TODO: Get rid of writer+strategy pair
-        HtmlWriterSimple htmlWriter = new HtmlWriterSimple(new FileWriter(sourceDir + "/" + INDEX_HTML));
+        HtmlWriter htmlWriter = new XHtmlWriter(new FileWriter(sourceDir + "/" + INDEX_HTML), rootFolderName, "#FF000000", targetHeightSize);
         routeFolder(rootFolderName, rootFolderName, new File(sourceDir), htmlWriter);
         htmlWriter.close();
         TimeInstrument timeInstrument = profiler.stop();
@@ -169,7 +163,6 @@ public class ImageIndexer {
 
         logger.info("Statistics: ");
         logger.info("readImage elapsed time          : {} ms", readImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
-        logger.info("background color detection time : {} ms", avgColorImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
         logger.info("resize image elapsed time       : {} ms", resizeImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
         logger.info("write thumbnails elapsed time   : ? ms");
     }

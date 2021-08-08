@@ -18,12 +18,18 @@ public interface HtmlWriter extends AutoCloseable {
 
     void endDiv();
 
-    void td();
+    void startTd();
+
+    void endTd();
 
     void endTable();
 
     void writeImg(String id, String src, String style, int width, int height, String alt);
 
-    void writeAnchor(String ref, String comment);
+    void beginAnchor(String ref);
+
+    void emptyAnchor(String ref, String comment);
+
+    void endAnchor();
 
 }

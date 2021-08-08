@@ -70,8 +70,13 @@ public class HtmlWriterSimple implements HtmlWriter {
     }
 
     @Override
-    public void td() {
+    public void startTd() {
         printWriter.printf("<td>");
+    }
+
+    @Override
+    public void endTd() {
+        // Nothing
     }
 
     @Override
@@ -92,10 +97,19 @@ public class HtmlWriterSimple implements HtmlWriter {
         printWriter.printf("<br>%n");
     }
 
-    public void writeAnchor(String ref, String comment) {
+    public void beginAnchor(String ref) {
         printWriter.printf("<a href=\"%s\">%s</a>%n",
-                escapeHtml4(ref),
-                escapeHtml4(comment));
+                escapeHtml4(ref));
+    }
+
+    @Override
+    public void emptyAnchor(String ref, String comment) {
+
+    }
+
+    @Override
+    public void endAnchor() {
+        printWriter.printf("</a>");
     }
 
 
