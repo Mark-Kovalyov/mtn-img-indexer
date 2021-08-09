@@ -1,0 +1,14 @@
+img{
+    display: block;
+    height:  height ${height} px;
+    margin-right  : 1px;
+    margin-bottom : 1px;
+}
+body{
+    background-color: ${bgcolor};
+}
+div{
+    display: flex;
+    flex-wrap: wrap;
+    width: 95%;
+}

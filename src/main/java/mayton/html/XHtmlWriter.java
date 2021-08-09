@@ -16,9 +16,10 @@ public class XHtmlWriter implements HtmlWriter {
 
     private static Logger logger = LoggerFactory.getLogger(XmlStreamWriter.class);
 
-    public XHtmlWriter(Writer writer, String title, String background, int height) throws XMLStreamException {
+
+    public XHtmlWriter(Writer writer, String title, String css, String background, int height) throws XMLStreamException {
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
-        //XMLStreamWriter xmlStreamWriter = new IndentingXMLStreamWriter(factory.createXMLStreamWriter(writer));
+        // TODO: Implement indentation
         xmlStreamWriter = factory.createXMLStreamWriter(writer);
         xmlStreamWriter.writeStartDocument("utf-8","1.0");
         xmlStreamWriter.writeStartElement("html");
@@ -31,21 +32,7 @@ public class XHtmlWriter implements HtmlWriter {
                     xmlStreamWriter.writeAttribute("content", "width=device-width, initial-scale=1.0");
                 xmlStreamWriter.writeEndElement();
                 xmlStreamWriter.writeStartElement("style");
-                xmlStreamWriter.writeCharacters(
-                    "            img{\n" +
-                    "                display: block;\n" +
-                    "                height:  " + height + "px;\n" +
-                    "                margin-right: 1px;\n" +
-                    "                margin-bottom: 1px; \n" +
-                    "            }\n" +
-                    "            body{\n" +
-                    "                background-color: " + background + ";\n" +
-                    "            }\n" +
-                    "            div{\n" +
-                    "                display: flex;\n" +
-                    "                flex-wrap: wrap;\n" +
-                    "                width: 95%;\n" +
-                    "            }\n");
+                xmlStreamWriter.writeCharacters(css);
                 xmlStreamWriter.writeEndElement();
             xmlStreamWriter.writeEndElement();
             xmlStreamWriter.writeStartElement("body");
@@ -56,6 +43,17 @@ public class XHtmlWriter implements HtmlWriter {
         try {
             xmlStreamWriter.writeStartElement("h1");
             xmlStreamWriter.writeCharacters(h1);
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void writeH3(String h3) {
+        try {
+            xmlStreamWriter.writeStartElement("h3");
+            xmlStreamWriter.writeCharacters(h3);
             xmlStreamWriter.writeEndElement();
         } catch (XMLStreamException e) {
             logger.error("!", e);

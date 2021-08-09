@@ -4,6 +4,8 @@ public interface HtmlWriter extends AutoCloseable {
 
     void writeH1(String h1);
 
+    void writeH3(String h3);
+
     void writeParagraph();
 
     void lineBreak();

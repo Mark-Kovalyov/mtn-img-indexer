@@ -7,4 +7,5 @@ set Path=%JAVA_HOME%\bin;%GRADLE_HOME%\bin;%MAVEN_HOME%\bin;%SBT_HOME%\bin
 mkdir bin
 call mvn package -P default
 copy target\mtn-img-indexer-1.0-SNAPSHOT.jar .\bin
-copy mtn-img-indexer.cmd .\bin
+copy src\main\resources\mtn-img-indexer.cmd .\bin
+copy src\main\resources\mtn-img-indexer.sh  .\bin
