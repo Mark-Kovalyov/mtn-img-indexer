@@ -10,6 +10,8 @@ import javax.xml.stream.XMLStreamWriter;
 
 import java.io.Writer;
 
+import static java.lang.String.valueOf;
+
 public class XHtmlWriter implements HtmlWriter {
 
     private XMLStreamWriter xmlStreamWriter;
@@ -17,7 +19,7 @@ public class XHtmlWriter implements HtmlWriter {
     private static Logger logger = LoggerFactory.getLogger(XmlStreamWriter.class);
 
 
-    public XHtmlWriter(Writer writer, String title, String css, String background, int height) throws XMLStreamException {
+    public XHtmlWriter(Writer writer, String title, String css) throws XMLStreamException {
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         // TODO: Implement indentation
         xmlStreamWriter = factory.createXMLStreamWriter(writer);
@@ -82,7 +84,7 @@ public class XHtmlWriter implements HtmlWriter {
     public void beginTable(int tableWidthPixels) {
         try {
             xmlStreamWriter.writeStartElement("table");
-            xmlStreamWriter.writeAttribute("width", String.valueOf(tableWidthPixels));
+            xmlStreamWriter.writeAttribute("width", valueOf(tableWidthPixels));
             xmlStreamWriter.writeAttribute("cellspacing", "0");
             xmlStreamWriter.writeAttribute("cellpadding", "0");
         } catch (XMLStreamException e) {
@@ -154,7 +156,21 @@ public class XHtmlWriter implements HtmlWriter {
     }
 
     @Override
-    public void writeImg(String id, String src, String style, int width, int height, String alt) {
+    public void writeImg(String src, int width, int height) {
+        try {
+            xmlStreamWriter.writeStartElement("img");
+            xmlStreamWriter.writeAttribute("src", src);
+            xmlStreamWriter.writeAttribute("alt", "");
+            xmlStreamWriter.writeAttribute("width", valueOf(width));
+            xmlStreamWriter.writeAttribute("height", valueOf(height));
+            xmlStreamWriter.writeEndElement();
+        } catch (XMLStreamException e) {
+            logger.error("!", e);
+        }
+    }
+
+    @Override
+    public void writeImg(String src) {
         try {
             xmlStreamWriter.writeStartElement("img");
             xmlStreamWriter.writeAttribute("src", src);

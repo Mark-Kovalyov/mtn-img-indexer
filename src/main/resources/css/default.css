@@ -4,6 +4,12 @@ img{
     margin-right  : 1px;
     margin-bottom : 1px;
 }
+h1 {
+    color: ${textcolor};
+}
+h3 {
+    color: ${textcolor};
+}
 body{
     background-color: ${bgcolor};
 }

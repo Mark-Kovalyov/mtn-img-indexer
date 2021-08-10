@@ -26,7 +26,9 @@ public interface HtmlWriter extends AutoCloseable {
 
     void endTable();
 
-    void writeImg(String id, String src, String style, int width, int height, String alt);
+    void writeImg(String src, int width, int height);
+
+    void writeImg(String src);
 
     void beginAnchor(String ref);
 

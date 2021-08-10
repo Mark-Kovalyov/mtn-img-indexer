@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static mayton.FileUtils.extractLastPathElement;
 import static mayton.FileUtils.trimExtension;
@@ -37,13 +38,14 @@ public class ImageIndexer {
 
     public static final String MINI_SUFFIX = "-mini";
     public static final String INDEX_HTML = "index.html";
-    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-(mini|bars|gradient))?\\.(?<extension>jpg|jfif|jpe|jpeg)$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern JPEG_MINI_EXTENSION = Pattern.compile(".+?(?<suffix>-(mini|bars|gradient))?\\.(?<extension>jpg|jfif|jpe|jpeg|png)$", Pattern.CASE_INSENSITIVE);
 
     public static Logger logger = LoggerFactory.getLogger(ImageIndexer.class);
     private final String sourceDir;
     private int targetHeightSize;
     private String rootFolderName;
-    private String bgColor;
+    private String bgColor = "#000000";
+    private String textColor = "#FFFFFF";
 
     private String css;
 
@@ -54,13 +56,16 @@ public class ImageIndexer {
         sourceDir = commandLine.getOptionValue("s");
         targetHeightSize = commandLine.hasOption("h") ? Integer.parseInt(commandLine.getOptionValue("h")) : 128;
         rootFolderName = commandLine.hasOption("r") ? commandLine.getOptionValue("r") : "";
-        bgColor = commandLine.hasOption("b") ? commandLine.getOptionValue("b") : "#FF000000";
+        bgColor = commandLine.hasOption("b") ? commandLine.getOptionValue("b") : bgColor;
+        textColor = commandLine.hasOption("t") ? commandLine.getOptionValue("t") : textColor;
         if (commandLine.hasOption("c")) {
             css = IOUtils.toString(new FileReader(commandLine.getOptionValue("c"), UTF_8));
         } else {
             css = IOUtils.toString(getClass().getClassLoader().getResourceAsStream("css/default.css"), UTF_8);
             // TODO: Huh... looks like FreeMaker or Thymeleaf ?
-            css = replace(replace(css, "${height}", String.valueOf(targetHeightSize)), "${bgcolor}", bgColor);
+            css = replace(css, "${height}",    valueOf(targetHeightSize));
+            css = replace(css, "${bgcolor}",   bgColor);
+            css = replace(css, "${textcolor}", textColor);
         }
     }
 
@@ -70,6 +75,7 @@ public class ImageIndexer {
                 .addOption("h", "thumnailheight",  true, "Thumbnail height size in pixels (default = 256)")
                 .addOption("r", "rootfoldername",  true, "Root folder name. Example: 'My Photos'")
                 .addOption("b", "bgcolor",    true, "Background color. Example #000000")
+                .addOption("t", "textcolor",    true, "Text color. Example #0000FF")
                 .addOption("c", "css", true, "Peek external css file. Example 'my-file.css'");
                 //.addOption("f", "fontcolor",  true, "Font color. Example #FFFFFF")
                 //.addOption("t", "transform", true, "Transform html5(xhtml) each index file with external XSLT file. Example 'my-styles.xslt'");
@@ -108,24 +114,19 @@ public class ImageIndexer {
                     }
                     String src = trimExtension(fileName) + MINI_SUFFIX + "." + extension;
                     htmlWriter.beginAnchor(fileName);
-                    htmlWriter.writeImg("", src, null, x, y, "");
+                    htmlWriter.writeImg(src, thumbnailX, thumbnailY);
                     htmlWriter.endAnchor();
                 }
             } catch (IIOException ex) {
                 logger.error("ImageIO exception", ex);
-                if (readImageStopWatcher.isStarted()) {
-                    readImageStopWatcher.suspend();
-                }
             } catch (IOException ex) {
                 logger.error("IO exception", ex);
-                if (readImageStopWatcher.isStarted()) {
-                    readImageStopWatcher.suspend();
-                }
             } catch (IllegalArgumentException ex) {
                 logger.error("IllegalArgumentException", ex);
-                if (readImageStopWatcher.isStarted()) {
+            } finally {
+                /*if (readImageStopWatcher.isStarted()) {
                     readImageStopWatcher.suspend();
-                }
+                }*/
             }
         }
     }
@@ -137,11 +138,13 @@ public class ImageIndexer {
             if (node.isDirectory()) {
                 String nodeName = node.getName();
                 if (!nodeName.startsWith(".")) {
+                    copyFolderImage(folder);
                     parentHtmlWriter.beginAnchor(node.getName() + "/" + INDEX_HTML);
-                    parentHtmlWriter.writeH3("[" + node.getName() + "]");
+                    parentHtmlWriter.writeImg("folder.svg", targetHeightSize, targetHeightSize);
+                    parentHtmlWriter.writeH3(node.getName());
                     parentHtmlWriter.endAnchor();
                     parentHtmlWriter.lineBreak();
-                    HtmlWriter currentHtmlWriter = new XHtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML), css, title, bgColor, this.targetHeightSize);
+                    HtmlWriter currentHtmlWriter = new XHtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML), title, css);
                     routeFolder(null, htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
                             node, currentHtmlWriter);
                     currentHtmlWriter.close();
@@ -158,6 +161,16 @@ public class ImageIndexer {
         }
         parentHtmlWriter.endDiv();
         parentHtmlWriter.close();
+    }
+
+    private void copyFolderImage(File folder)  {
+        try(OutputStream os = new FileOutputStream(new File(folder, "folder.svg"))) {
+            IOUtils.copy(getClass().getClassLoader().getResourceAsStream("img/folder.svg"), os);
+        } catch (FileNotFoundException e) {
+            logger.warn("!",e);
+        } catch (IOException e) {
+            logger.warn("!",e);
+        }
     }
 
 
@@ -191,7 +204,7 @@ public class ImageIndexer {
         Profiler profiler = new Profiler("image-indexer");
         profiler.setLogger(logger);
         profiler.start("indexing");
-        HtmlWriter htmlWriter = new XHtmlWriter(new FileWriter(sourceDir + "/" + INDEX_HTML), rootFolderName, css, bgColor, targetHeightSize);
+        HtmlWriter htmlWriter = new XHtmlWriter(new FileWriter(sourceDir + "/" + INDEX_HTML), rootFolderName, css);
         routeFolder(rootFolderName, rootFolderName, new File(sourceDir), htmlWriter);
         htmlWriter.close();
         TimeInstrument timeInstrument = profiler.stop();
