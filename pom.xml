@@ -131,6 +131,19 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.2.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>mayton.ImageIndexer</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.graalvm.nativeimage</groupId>
                 <artifactId>native-image-maven-plugin</artifactId>
                 <version>${graalvm.version}</version>
@@ -144,9 +157,10 @@
                 </executions>
                 <configuration>
                     <skip>false</skip>
-                    <imageName>example</imageName>
+                    <imageName>mtn-img-indexer</imageName>
                     <buildArgs>
                         --no-fallback
+                        --allow-incomplete-classpath
                     </buildArgs>
                 </configuration>
             </plugin>
