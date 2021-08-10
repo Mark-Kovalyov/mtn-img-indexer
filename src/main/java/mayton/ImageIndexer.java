@@ -113,16 +113,11 @@ public class ImageIndexer {
                 }
             } catch (IIOException ex) {
                 logger.error("ImageIO exception", ex);
-                if (readImageStopWatcher.isStarted()) {
-                    readImageStopWatcher.suspend();
-                }
             } catch (IOException ex) {
                 logger.error("IO exception", ex);
-                if (readImageStopWatcher.isStarted()) {
-                    readImageStopWatcher.suspend();
-                }
             } catch (IllegalArgumentException ex) {
                 logger.error("IllegalArgumentException", ex);
+            } finally {
                 if (readImageStopWatcher.isStarted()) {
                     readImageStopWatcher.suspend();
                 }
