@@ -74,9 +74,9 @@ public class ImageIndexer {
                 .addRequiredOption("s", "source",  true, "Source jpeg files folder")
                 .addOption("h", "thumnailheight",  true, "Thumbnail height size in pixels (default = 256)")
                 .addOption("r", "rootfoldername",  true, "Root folder name. Example: 'My Photos'")
-                .addOption("b", "bgcolor",    true, "Background color. Example #000000")
-                .addOption("t", "textcolor",    true, "Text color. Example #0000FF")
-                .addOption("c", "css", true, "Peek external css file. Example 'my-file.css'");
+                .addOption("b", "bgcolor",         true, "Background color. Example #000000")
+                .addOption("t", "textcolor",       true, "Text color. Example #0000FF")
+                .addOption("c", "css",             true, "Peek external css file. Example 'my-file.css'");
                 //.addOption("f", "fontcolor",  true, "Font color. Example #FFFFFF")
                 //.addOption("t", "transform", true, "Transform html5(xhtml) each index file with external XSLT file. Example 'my-styles.xslt'");
     }
@@ -93,9 +93,9 @@ public class ImageIndexer {
             String extension = miniMatcher.group("extension");
             logger.info("process jpeg file {}", file);
             try {
-                readImageStopWatcher.resume();
+                //readImageStopWatcher.resume();
                 BufferedImage image = ImageIO.read(file);
-                readImageStopWatcher.suspend();
+                //readImageStopWatcher.suspend();
                 if (image == null) {
                     logger.warn("Something going wrong with file {}. Unable to read image.", file);
                 } else {

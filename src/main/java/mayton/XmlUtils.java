@@ -1,33 +1,33 @@
 package mayton;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 
 public class XmlUtils {
 
-    // TODO: Too much complex. Simplify.
-    public static String transform(String xml) throws TransformerException {
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+    private TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+    public void transformToHtml(Reader xhtmlReader, Reader xsltReader, Writer writer) throws TransformerException, IOException {
+        StreamSource xslSource = new StreamSource(xsltReader);
+        Templates xsltObject = transformerFactory.newTemplates(xslSource);
+        Transformer transformer = xsltObject.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-        Writer out = new StringWriter();
-        transformer.transform(new StreamSource(new StringReader(xml)), new StreamResult(out));
-        return out.toString();
+        transformer.transform(new StreamSource(xhtmlReader), new StreamResult(writer));
+        writer.flush();
     }
 
-    public static void transform(Reader reader, Writer writer) throws TransformerException {
-        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+    public void formatWithIndent(Reader xhtmlReader, Writer xhtmlWriter) throws TransformerException, IOException {
+        Reader xsltReader = new InputStreamReader((getClass().getClassLoader().getResourceAsStream("xslt/empty-transform.xslt")));
+        StreamSource xslSource = new StreamSource(xsltReader);
+        Templates xsltObject = transformerFactory.newTemplates(xslSource);
+        Transformer transformer = xsltObject.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-        transformer.transform(new StreamSource(reader), new StreamResult(writer));
+        transformer.transform(new StreamSource(xhtmlReader), new StreamResult(xhtmlWriter));
+        xhtmlWriter.flush();
     }
+
+
 
 }
