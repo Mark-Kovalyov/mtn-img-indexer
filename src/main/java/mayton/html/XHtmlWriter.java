@@ -18,7 +18,6 @@ public class XHtmlWriter implements HtmlWriter {
 
     private static Logger logger = LoggerFactory.getLogger(XmlStreamWriter.class);
 
-
     public XHtmlWriter(Writer writer, String title, String css) throws XMLStreamException {
         XMLOutputFactory factory = XMLOutputFactory.newInstance();
         // TODO: Implement indentation

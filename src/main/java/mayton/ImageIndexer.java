@@ -12,6 +12,8 @@ import org.slf4j.profiler.TimeInstrument;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +35,8 @@ import static org.apache.commons.lang3.StringUtils.replace;
 public class ImageIndexer {
 
     private StopWatch readImageStopWatcher = StopWatch.create();
+    private StopWatch writeImageStopWatcher = StopWatch.create();
     private StopWatch resizeImageStopWatcher = StopWatch.create();
-    private StopWatch avgColorImageStopWatcher = StopWatch.create();
 
     public static final String MINI_SUFFIX = "-mini";
     public static final String INDEX_HTML = "index.html";
@@ -46,18 +48,19 @@ public class ImageIndexer {
     private String rootFolderName;
     private String bgColor = "#000000";
     private String textColor = "#FFFFFF";
-
+    private Transformer transformer = null;
     private String css;
 
     private CommandLine commandLine;
 
-    public ImageIndexer(CommandLine line) throws IOException {
-        this.commandLine = line;
-        sourceDir = commandLine.getOptionValue("s");
+    public ImageIndexer(CommandLine line) throws IOException, TransformerConfigurationException {
+        commandLine      = line;
+        sourceDir        = commandLine.getOptionValue("s");
         targetHeightSize = commandLine.hasOption("h") ? Integer.parseInt(commandLine.getOptionValue("h")) : 128;
-        rootFolderName = commandLine.hasOption("r") ? commandLine.getOptionValue("r") : "";
-        bgColor = commandLine.hasOption("b") ? commandLine.getOptionValue("b") : bgColor;
-        textColor = commandLine.hasOption("t") ? commandLine.getOptionValue("t") : textColor;
+        rootFolderName   = commandLine.hasOption("r") ? commandLine.getOptionValue("r") : "";
+        bgColor          = commandLine.hasOption("b") ? commandLine.getOptionValue("b") : bgColor;
+        textColor        = commandLine.hasOption("t") ? commandLine.getOptionValue("t") : textColor;
+
         if (commandLine.hasOption("c")) {
             css = IOUtils.toString(new FileReader(commandLine.getOptionValue("c"), UTF_8));
         } else {
@@ -66,6 +69,9 @@ public class ImageIndexer {
             css = replace(css, "${height}",    valueOf(targetHeightSize));
             css = replace(css, "${bgcolor}",   bgColor);
             css = replace(css, "${textcolor}", textColor);
+        }
+        if (commandLine.hasOption("t")) {
+            transformer = XmlUtils.getInstance().prepareTransformer(new FileReader(commandLine.getOptionValue("t")));
         }
     }
 
@@ -77,8 +83,7 @@ public class ImageIndexer {
                 .addOption("b", "bgcolor",         true, "Background color. Example #000000")
                 .addOption("t", "textcolor",       true, "Text color. Example #0000FF")
                 .addOption("c", "css",             true, "Peek external css file. Example 'my-file.css'");
-                //.addOption("f", "fontcolor",  true, "Font color. Example #FFFFFF")
-                //.addOption("t", "transform", true, "Transform html5(xhtml) each index file with external XSLT file. Example 'my-styles.xslt'");
+                //.addOption("t", "transform",       true, "Transform xhtml-index-file with external XSLT script. Example 'my-styles.xslt'");
     }
 
     public static void printHelp() {
@@ -109,8 +114,10 @@ public class ImageIndexer {
                     BufferedImage thumbnail = resizeImage(image, thumbnailX, thumbnailY);
                     resizeImageStopWatcher.suspend();
                     String miniPath = trimExtension(file.getAbsoluteFile().toString()) + MINI_SUFFIX + "." + extension;
+                    writeImageStopWatcher.resume();
                     try (OutputStream outputStream = new FileOutputStream(miniPath)) {
                         ImageIO.write(thumbnail, "JPEG", outputStream);
+                        writeImageStopWatcher.suspend();
                     }
                     String src = trimExtension(fileName) + MINI_SUFFIX + "." + extension;
                     htmlWriter.beginAnchor(fileName);
@@ -194,12 +201,12 @@ public class ImageIndexer {
 
     private void go() throws Exception {
 
-        avgColorImageStopWatcher.start();
-        avgColorImageStopWatcher.suspend();
         readImageStopWatcher.start();
         readImageStopWatcher.suspend();
         resizeImageStopWatcher.start();
         resizeImageStopWatcher.suspend();
+        writeImageStopWatcher.start();
+        writeImageStopWatcher.suspend();
 
         Profiler profiler = new Profiler("image-indexer");
         profiler.setLogger(logger);
@@ -210,13 +217,14 @@ public class ImageIndexer {
         TimeInstrument timeInstrument = profiler.stop();
         timeInstrument.log();
 
-        avgColorImageStopWatcher.stop();
+
         readImageStopWatcher.stop();
         resizeImageStopWatcher.stop();
+        writeImageStopWatcher.stop();
 
         logger.info("Statistics: ");
         logger.info("readImage elapsed time          : {} ms", readImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
         logger.info("resize image elapsed time       : {} ms", resizeImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
-        logger.info("write thumbnails elapsed time   : ? ms");
+        logger.info("write thumbnails elapsed time   : {} ms", writeImageStopWatcher.getTime(TimeUnit.MILLISECONDS));
     }
 }

@@ -7,13 +7,35 @@ import java.io.*;
 
 public class XmlUtils {
 
+    private XmlUtils() {
+        // No instance
+    }
+
+    public static class Singleton {
+        public static final XmlUtils xmlUtils = new XmlUtils();
+    }
+
+    public static XmlUtils getInstance() {
+        return Singleton.xmlUtils;
+    }
+
     private TransformerFactory transformerFactory = TransformerFactory.newInstance();
 
-    public void transformToHtml(Reader xhtmlReader, Reader xsltReader, Writer writer) throws TransformerException, IOException {
+    public Transformer prepareTransformer(Reader xsltReader) throws TransformerConfigurationException {
         StreamSource xslSource = new StreamSource(xsltReader);
         Templates xsltObject = transformerFactory.newTemplates(xslSource);
         Transformer transformer = xsltObject.newTransformer();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        return transformer;
+    }
+
+    public void transformToHtml(Reader xhtmlReader, Transformer transformer, Writer writer) throws TransformerException, IOException {
+        transformer.transform(new StreamSource(xhtmlReader), new StreamResult(writer));
+        writer.flush();
+    }
+
+    public void transformToHtml(Reader xhtmlReader, Reader xsltReader, Writer writer) throws TransformerException, IOException {
+        Transformer transformer = prepareTransformer(xsltReader);
         transformer.transform(new StreamSource(xhtmlReader), new StreamResult(writer));
         writer.flush();
     }

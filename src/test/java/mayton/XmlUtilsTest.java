@@ -9,10 +9,10 @@ public class XmlUtilsTest {
 
     @Test
     public void testIndentation() throws TransformerException, IOException {
-        XmlUtils xmlUtils = new XmlUtils();
+
         String xml = "<?xml version=\"1.0\"?><html><head></head><body>Hello world</body></html>";
         StringWriter sw = new StringWriter();
-        xmlUtils.formatWithIndent(new StringReader(xml), sw);
+        XmlUtils.getInstance().formatWithIndent(new StringReader(xml), sw);
         assertEquals(
                 "<html>\n" +
                 "    <head/>\n" +
@@ -22,11 +22,10 @@ public class XmlUtilsTest {
 
     @Test
     public void testTransform() throws IOException, TransformerException {
-        XmlUtils xmlUtils = new XmlUtils();
         String xml = "<?xml version=\"1.0\"?><html><head></head></html>";
         Reader xslt = new InputStreamReader((getClass().getClassLoader().getResourceAsStream("xslt/transform-01.xslt")));
         StringWriter sw = new StringWriter();
-        xmlUtils.transformToHtml(new StringReader(xml), xslt, sw);
+        XmlUtils.getInstance().transformToHtml(new StringReader(xml), xslt, sw);
         assertEquals(
                 "<html>\n" +
                 "    <body>\n" +
