@@ -1,0 +1,45 @@
+@startuml
+class ImageIO {
+  + write(..)
+  + read(..) : Image
+}
+
+class Graphics2D extends Graphics {
+}
+
+class Graphics {
+}
+
+abstract class Image {
++ getWidth(ImageObserver var1) : int
++ getHeight(ImageObserver var1) : int
++ getSource() : ImageProducer
++ getGraphics() : Graphics
++ getProperty(String var1, ImageObserver var2) : Object
+}
+
+class MemoryImageSource implements ImageProducer {
+
+}
+
+interface ImageProducer {
++ addConsumer(ImageConsumer var1)
++ isConsumer(ImageConsumer var1) : boolean
++ removeConsumer(ImageConsumer var1);
++ startProduction(ImageConsumer var1);
++ requestTopDownLeftRightResend(ImageConsumer var1);
+}
+
+interface RenderedImage {
+
+}
+
+class BufferedImage extends Image implements WritableRenderedImage, Transparency {
+
+}
+
+class Canvas extends Component implements Accessible {
+
+}
+
+@enduml

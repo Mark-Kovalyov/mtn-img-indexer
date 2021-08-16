@@ -5,7 +5,7 @@ set MAVEN_HOME=c:\maven\3.6.0
 set Path=%JAVA_HOME%\bin;%GRADLE_HOME%\bin;%MAVEN_HOME%\bin;%SBT_HOME%\bin
 
 mkdir bin
-call mvn package -P default
+call mvn package -P ImageIndexer
 copy target\mtn-img-indexer-1.0-SNAPSHOT.jar .\bin
 copy src\main\resources\mtn-img-indexer.cmd .\bin
 copy src\main\resources\mtn-img-indexer.sh  .\bin

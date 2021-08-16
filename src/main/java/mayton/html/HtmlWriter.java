@@ -1,6 +1,8 @@
 package mayton.html;
 
-public interface HtmlWriter extends AutoCloseable {
+import java.io.Closeable;
+
+public interface HtmlWriter extends Closeable {
 
     void writeH1(String h1);
 

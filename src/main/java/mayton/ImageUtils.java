@@ -12,6 +12,21 @@ import static java.lang.Math.min;
 
 public class ImageUtils {
 
+    public static final double GK=0.587;
+    public static final double BK=0.114;
+    public static final double RK=0.299;
+
+
+
+    public static final int FULL_HD_W = 1920;
+    public static final int FULL_HD_H = 1080;
+
+    public static final int PAL_W = 720;
+    public static final int PAL_H = 576;
+
+    public static final int VGA_W = 640;
+    public static final int VGA_H = 480;
+
     public static int getRPixel(int color) {
         return (0x00FF0000&color)>>16;
     }
@@ -77,4 +92,28 @@ public class ImageUtils {
             Thread.currentThread().interrupt();
         }
     }
+
+    public static double getYPixelDouble(int color) {
+        double res = (GK * ((color & 0x00FF00) >> 8) + BK * (color & 0x0000FF) + RK * ((color & 0xFF0000) >> 16)) / 255.0;
+        assert res >= 0.0;
+        assert res <= 1.0;
+        return res;
+    }
+
+    public static final double UPIXEL_MAX_DOUBLE = getUPixelDouble(getPixel(0,255,0));
+    public static final double UPIXEL_MIN_DOUBLE = getUPixelDouble(getPixel(255,0,255));
+
+    public static double getUPixelDouble(int color) {
+        return (
+                -0.147 * (color & 0xFF)
+                        - 0.289 * ((color & 0xFF0000) >> 16)
+                        + 0.436 * ((color & 0xFF00) >> 8) + 111.18) / 222.36;
+    }
+
+    public static double getVPixelDouble(int color) {
+        return  (0.615 * (color & 0xFF)
+                        - 0.515 * ((color & 0xFF0000) >> 16)
+                        - 0.1 * ((color & 0xFF00) >> 8) + 156.825) / 313.65;
+    }
+
 }

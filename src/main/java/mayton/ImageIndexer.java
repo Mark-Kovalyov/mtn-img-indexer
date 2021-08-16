@@ -14,6 +14,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.concurrent.TimeUnit;
@@ -151,10 +152,37 @@ public class ImageIndexer {
                     parentHtmlWriter.writeH3(node.getName());
                     parentHtmlWriter.endAnchor();
                     parentHtmlWriter.lineBreak();
-                    HtmlWriter currentHtmlWriter = new XHtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML), title, css);
+
+                    PipedReader pipedReader = new PipedReader(4096);
+                    PipedWriter pipedWriter = new PipedWriter();
+                    pipedWriter.connect(pipedReader);
+
+                    HtmlWriter currentHtmlWriter = new XHtmlWriter(pipedWriter, title, css);
+
+                    Thread thread = new Thread(() -> {
+                        try {
+                            logger.info("p1");
+                            FileWriter writer = new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML);
+                            logger.info("p2");
+                            //CountingReader countingReader = new CountingReader(pipedReader);
+                            //XmlUtils.getInstance().transformToHtml(countingReader, this.transformer, writer);
+                            IOUtils.copy(pipedReader, writer);
+                            logger.info("p3");
+                            writer.close();
+                            logger.info("p4");
+                        } catch (IOException e) {
+                            logger.error("!", e);
+                        }
+                    });
+                    thread.start();
+
                     routeFolder(null, htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
                             node, currentHtmlWriter);
                     currentHtmlWriter.close();
+
+                    logger.info("p5");
+                    thread.join();
+                    logger.info("p6");
                 } else {
                     logger.debug("Ignore hidden folder {}", nodeName);
                 }

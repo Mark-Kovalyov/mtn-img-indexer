@@ -212,8 +212,12 @@ public class XHtmlWriter implements HtmlWriter {
     }
 
     @Override
-    public void close() throws Exception {
-        xmlStreamWriter.writeEndDocument();
-        xmlStreamWriter.close();
+    public void close() {
+        try {
+            xmlStreamWriter.writeEndDocument();
+            xmlStreamWriter.close();
+        } catch (XMLStreamException e) {
+            e.printStackTrace();
+        }
     }
 }
