@@ -137,6 +137,12 @@
       <version>30.1.1-jre</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-imaging</artifactId>
+      <version>1.0-alpha2</version>
+    </dependency>
+
   </dependencies>
 
   <build>
