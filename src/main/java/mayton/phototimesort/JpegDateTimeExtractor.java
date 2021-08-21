@@ -13,12 +13,19 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.DriverManager;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+import static java.util.Arrays.asList;
+
 public class JpegDateTimeExtractor {
+
+    DriverManager manager;
 
     public static Logger logger = LoggerFactory.getLogger(JpegDateTimeExtractor.class);
 
@@ -38,12 +45,25 @@ public class JpegDateTimeExtractor {
         }
     }
 
-    public ExifDates exifDatesFromFile(InputStream inputStream) {
-        return new ExifDates(Optional.empty());
+    public Optional<LocalDateTime> tryigToApplyDatePattern(String dateTimeVal, List<String> datePatterns) {
+        for(String datePattern : datePatterns) {
+            try {
+                DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(datePattern);
+                LocalDateTime localDateTime = LocalDateTime.parse(dateTimeVal, dateTimeFormatter);
+                return Optional.of(localDateTime);
+            } catch (DateTimeParseException ex) {
+                // Nothing to do
+            }
+        }
+        return Optional.empty();
     }
 
     public Optional<LocalDateTime> fromFile(InputStream inputStream) {
-        ImageMetadata metadata = null;
+        return fromFile(inputStream, asList("DateTime", "DateTimeOriginal", "DateTimeDigitized"), asList("yyyy:MM:dd HH:mm:ss"));
+    }
+
+    public Optional<LocalDateTime> fromFile(InputStream inputStream, List<String> exifTags, List<String> datePatterns) {
+        ImageMetadata metadata;
         Optional<String> value = Optional.empty();
         try {
             metadata = Imaging.getMetadata(inputStream, null);
@@ -53,31 +73,29 @@ public class JpegDateTimeExtractor {
                     for (TiffField field : items.getAllFields()) {
                         if (field.getFieldType() == FieldType.ASCII) {
                             String tagName = field.getTagName();
-                            if ("DateTime".equals(tagName)) {
-                                value = safeGetValue(field);
-                                if (value.isPresent()) {
-                                    break;
+                            for(String tag : exifTags) {
+                                if (tag.equals(tagName)) {
+                                    value = safeGetValue(field);
+                                    if (value.isPresent()) {
+                                        return tryigToApplyDatePattern(value.get(), datePatterns);
+                                    }
                                 }
                             }
-                            // TODO: DateTime DateTimeOriginal DateTimeDigitized
                         }
                     }
                 } else {
-                    logger.warn("No tiff fields");
+                    logger.warn("No tiff fields detected!");
                 }
             } else {
-                logger.warn("No TiffImageMetadata!");
-            }
-            if (value.isPresent()) {
-                return Optional.of(LocalDateTime.parse(value.get(), DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss")));
+                logger.warn("No TiffImageMetadata detected!");
             }
             //JpegImageMetadata jpegMetadata = (JpegImageMetadata) metadata;
         } catch (ImageReadException e) {
-            logger.error("!", e);
+            logger.error("ImageReadException", e);
         } catch (IOException e) {
-            logger.error("!", e);
+            logger.error("IOException", e);
         } catch (DateTimeParseException e) {
-            logger.warn("DateTimeParseException during parse {}" + value.get(), e);
+            logger.warn("DateTimeParseException during parse " + value.get(), e);
         }
         return Optional.empty();
     }

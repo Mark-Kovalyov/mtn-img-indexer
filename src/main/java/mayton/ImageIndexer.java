@@ -141,7 +141,7 @@ public class ImageIndexer {
 
     public void routeFolder(String rootName, String htmlLocalFolder, File folder, HtmlWriter parentHtmlWriter) throws Exception {
         String title = rootName == null ? folder.getName() : rootName;
-        parentHtmlWriter.writeH1(title);
+        parentHtmlWriter.writeH1(htmlLocalFolder);
         for(File node : folder.listFiles()) {
             if (node.isDirectory()) {
                 String nodeName = node.getName();
@@ -152,37 +152,11 @@ public class ImageIndexer {
                     parentHtmlWriter.writeH3(node.getName());
                     parentHtmlWriter.endAnchor();
                     parentHtmlWriter.lineBreak();
-
-                    PipedReader pipedReader = new PipedReader(4096);
-                    PipedWriter pipedWriter = new PipedWriter();
-                    pipedWriter.connect(pipedReader);
-
-                    HtmlWriter currentHtmlWriter = new XHtmlWriter(pipedWriter, title, css);
-
-                    Thread thread = new Thread(() -> {
-                        try {
-                            logger.info("p1");
-                            FileWriter writer = new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML);
-                            logger.info("p2");
-                            //CountingReader countingReader = new CountingReader(pipedReader);
-                            //XmlUtils.getInstance().transformToHtml(countingReader, this.transformer, writer);
-                            IOUtils.copy(pipedReader, writer);
-                            logger.info("p3");
-                            writer.close();
-                            logger.info("p4");
-                        } catch (IOException e) {
-                            logger.error("!", e);
-                        }
-                    });
-                    thread.start();
-
+                    HtmlWriter currentHtmlWriter = new XHtmlWriter(new FileWriter(node.getAbsoluteFile() + "/" + INDEX_HTML), title, css);
                     routeFolder(null, htmlLocalFolder.isBlank() ? nodeName : htmlLocalFolder + "/" + nodeName,
                             node, currentHtmlWriter);
                     currentHtmlWriter.close();
 
-                    logger.info("p5");
-                    thread.join();
-                    logger.info("p6");
                 } else {
                     logger.debug("Ignore hidden folder {}", nodeName);
                 }
@@ -200,7 +174,7 @@ public class ImageIndexer {
 
     private void copyFolderImage(File folder)  {
         try(OutputStream os = new FileOutputStream(new File(folder, "folder.svg"))) {
-            IOUtils.copy(getClass().getClassLoader().getResourceAsStream("img/folder.svg"), os);
+            IOUtils.copy(getClass().getClassLoader().getResourceAsStream("img" + FileUtils.SEPARATOR + "folder.svg"), os);
         } catch (FileNotFoundException e) {
             logger.warn("!",e);
         } catch (IOException e) {
@@ -239,12 +213,11 @@ public class ImageIndexer {
         Profiler profiler = new Profiler("image-indexer");
         profiler.setLogger(logger);
         profiler.start("indexing");
-        HtmlWriter htmlWriter = new XHtmlWriter(new FileWriter(sourceDir + "/" + INDEX_HTML), rootFolderName, css);
+        HtmlWriter htmlWriter = new XHtmlWriter(new FileWriter(sourceDir + FileUtils.SEPARATOR + INDEX_HTML), rootFolderName, css);
         routeFolder(rootFolderName, rootFolderName, new File(sourceDir), htmlWriter);
         htmlWriter.close();
         TimeInstrument timeInstrument = profiler.stop();
         timeInstrument.log();
-
 
         readImageStopWatcher.stop();
         resizeImageStopWatcher.stop();

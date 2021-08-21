@@ -38,4 +38,9 @@ class ImageIndexerTest {
         assertNotNull(matcher1.group("extension"));
         assertEquals("jpeg", matcher1.group("extension"));
     }
+
+    @Test
+    void testCropPath() {
+        assertEquals("/bigdata/tmp/2011/07/01",FileUtils.cropLastPathElement("/bigdata/tmp/2011/07/01/01-02-55.jpg"));
+    }
 }

@@ -23,7 +23,7 @@
       </activation>
       <properties>
         <main.class.name>mayton.ImageIndexer</main.class.name>
-        <jar.name>image-indexer</jar.name>
+        <jar.name>mtn-img-indexer</jar.name>
       </properties>
     </profile>
 
