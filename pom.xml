@@ -6,7 +6,7 @@
 
   <groupId>mayton</groupId>
   <artifactId>mtn-img-indexer</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.2</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -35,13 +35,6 @@
       </properties>
     </profile>
 
-    <profile>
-      <id>PhotoTimeSort</id>
-      <properties>
-        <main.class.name>mayton.phototimesort.PhotoTimeSort</main.class.name>
-        <jar.name>photo-time-sort</jar.name>
-      </properties>
-    </profile>
   </profiles>
 
   <dependencies>
